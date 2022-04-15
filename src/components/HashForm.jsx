@@ -23,6 +23,7 @@ import {
     InputRightElement,
     FormHelperText,
     FormErrorMessage,
+    useClipboard
 } from '@chakra-ui/react'
 import { hashGeneratorService, checkMatchService } from './HashService';
 
@@ -38,7 +39,9 @@ const HashForm = () => {
 
     const [textInputToCompare, setTextInputToCompare] = useState('');
     const [hashedInput, setHashedInput] = useState('');
-    const [match, setMatch] = useState('Give inputs some words');
+
+    const [match, setMatch] = useState(false);
+    const { hasCopied, onCopy } = useClipboard(result)
 
     const { getInputProps, getIncrementButtonProps, getDecrementButtonProps } =
         useNumberInput({
@@ -59,7 +62,6 @@ const HashForm = () => {
 
 
     useEffect(() => {
-        console.log('eee');
         let currentRound = input['aria-valuenow']
         setRounds(currentRound);
 
@@ -78,14 +80,17 @@ const HashForm = () => {
         //if (textInputToCompare === '' || hashedInput === '') {setIsValid(!isValid);}
         console.log("checkMatchInput: ", textInputToCompare, hashedInput);
         try {
-            
+
             let result = await checkMatchService(textInputToCompare, hashedInput);
-            setMatch(result);
-            onToggleMatchField();
+            console.log(result);
+            setMatch(result.data.result);
+            setTimeout(onToggleMatchField())
+            // onToggleMatchField();
         } catch (error) {
-            console.error("handleCheckMatchInput: ",error);
+            console.error("handleCheckMatchInput: ", error);
         }
     }
+
 
     return (
 
@@ -115,7 +120,12 @@ const HashForm = () => {
 
                             >
                                 {!result ? 'Hey there, type something in that field below' : result}
+
                             </Box>
+                            <Button h='1.75rem' size='sm' onClick={onCopy()}>
+                                {hasCopied ? 'Copied' : 'Copy'}
+                            </Button>
+
                         </Collapse>
                         <Select variant='flushed' placeholder='Select algorithm' >
                             {alg.map((index, item) => {
@@ -143,7 +153,7 @@ const HashForm = () => {
                             </InputGroup>
                         </FormControl>
                         {input['aria-valuenow'] >= 15 &&
-                            <Heading size='sm'>* The higher round number is, the longer result would take.</Heading>
+                            <Heading size='sm'>* The higher round number, the longer time would take.</Heading>
                         }
                         <HStack maxW='320px'>
                             <Button {...inc}>+</Button>
@@ -157,7 +167,7 @@ const HashForm = () => {
                     <VStack gap='20px'>
                         <Heading>Encrypt</Heading>
                         <Heading size='sm'>Encrypt some text. The result shown will be a Bcrypt encrypted hash.</Heading>
-                        <Collapse in={isOpenMatchField} animateOpacity>
+                        <Collapse in="isOpenHashField" animateOpacity>
                             <Box
                                 p='5px'
                                 color='white'
@@ -175,14 +185,14 @@ const HashForm = () => {
                             <InputGroup display='block' >
                                 <Input id='text-input' mb='20px' placeholder='*Text input' value={textInputToCompare} onChange={event => setTextInputToCompare(event.target.value)} />
                                 <Input id='hashed-input' placeholder='*Hashed input' value={hashedInput} onChange={event => setHashedInput(event.target.value)} />
-                                
-                                {!isValid ? (
+
+                                {/* {!isValid ? (
                                     <FormHelperText>
                                         Enter the email you'd like to receive the newsletter on.
                                     </FormHelperText>
                                 ) : (
                                     <FormErrorMessage>Email is required.</FormErrorMessage>
-                                )}
+                                )} */}
                             </InputGroup>
                         </FormControl>
                         <Button rightIcon={<ArrowForwardIcon />} colorScheme='teal' variant='outline' onClick={handleCheckMatchInput}>
