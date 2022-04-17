@@ -1,44 +1,25 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios';
-import { ArrowForwardIcon } from '@chakra-ui/icons'
+import { ArrowForwardIcon } from '@chakra-ui/icons';
 import {
-    FormControl,
-    FormLabel,
-    Input,
-    Flex,
-
-    Box,
-    Spacer,
-    Heading,
-    Button,
-    Container,
-    HStack,
-    useNumberInput,
-    VStack,
-    Select,
-    useColorMode,
-    Collapse,
-    useDisclosure,
-    InputGroup,
-    InputRightElement,
-    FormHelperText,
-    FormErrorMessage,
-    useClipboard
-} from '@chakra-ui/react'
-import { hashGeneratorService, checkMatchService } from './HashService';
-
+    Box, Button, Collapse, Container, Flex, FormControl, FormErrorMessage, Heading, HStack, Input, InputGroup,
+    InputRightElement, Modal, ModalBody,
+    ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Select, Spacer, useClipboard, useColorMode, useDisclosure, useNumberInput,
+    VStack
+} from '@chakra-ui/react';
+import React, { useEffect, useState } from 'react';
+import { checkMatchService, hashGeneratorService } from './HashService';
+import { QRCodeCanvas } from 'qrcode.react';
 
 
 const HashForm = () => {
 
     const [rounds, setRounds] = useState();
-    const [isValid, setIsValid] = useState(true);
-
+    //const [isValid, setIsValid] = useState(true);
     const [textInput, setTextInput] = useState('');
     const [result, setResult] = useState('');
-
+    
     const [textInputToCompare, setTextInputToCompare] = useState('');
     const [hashedInput, setHashedInput] = useState('');
+    const isError = textInputToCompare === '' || hashedInput === ''
 
     const [match, setMatch] = useState(false);
     const { hasCopied, onCopy } = useClipboard(result)
@@ -58,8 +39,7 @@ const HashForm = () => {
     const { colorMode, toggleColorMode } = useColorMode()
     const { isOpen: isOpenHashField, onToggle: onToggleHashField } = useDisclosure()
     const { isOpen: isOpenMatchField, onToggle: onToggleMatchField } = useDisclosure()
-
-
+    const { isOpen: isOpenQR, onOpen, onClose } = useDisclosure()
 
     useEffect(() => {
         let currentRound = input['aria-valuenow']
@@ -80,7 +60,6 @@ const HashForm = () => {
         //if (textInputToCompare === '' || hashedInput === '') {setIsValid(!isValid);}
         console.log("checkMatchInput: ", textInputToCompare, hashedInput);
         try {
-
             let result = await checkMatchService(textInputToCompare, hashedInput);
             console.log(result);
             setMatch(result.data.result);
@@ -91,21 +70,54 @@ const HashForm = () => {
         }
     }
 
+    const onDownloadQr = () => {
+        // const qrImageSVG = document.getElementById('qrCodeD');
+        // let { width, height } = qrImageSVG.get;
+        // let image = new Image();
+        // image.onload = () => {
+        //     let canvas = document.createElement('canvas');
+        //     canvas.width = width;
+        //     canvas.height = height;
+        //     let context = canvas.getContext('2d');
+        //     context.drawImage(image, 0, 0, width, height);
+        //     const qrImageURL = qrImage.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+        //     let downloadLink = document.createElement('a');
+        //     downloadLink.href = qrImageURL;
+        //     downloadLink.download = 'qrcode_xuandai-py@github.png';
+        //     document.body.appendChild(downloadLink);
+        //     downloadLink.click();
+        //     document.body.removeChild(downloadLink);
+        // }
+        const qrImageCanvas = document.getElementById('qrCodeD');
+
+        const qrImageURL = qrImageCanvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+        let downloadLink = document.createElement('a');
+        downloadLink.href = qrImageURL;
+        downloadLink.download = 'qrcode_xuandai-py@github.png';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+    }
+
+    // quick validate
+    
+
 
     return (
 
         <Container maxWidth='100%' h='100vh' padding='0px'>
-            <Box bgColor='rgba(31,41,55,1)'>
+            <Box bgColor='rgba(31,41,55,1)' p='5px'>
                 <HStack>
                     <Heading size='lg' fontWeight='600' color='white'>Bcrypt-Generator.com - Online Bcrypt Hash Generator & Checker</Heading>
                     <Spacer />
-                    <Button onClick={toggleColorMode} bgColor='rgba(31,41,55,1)' outline='none'>
+                    <Button onClick={toggleColorMode} color='white' bgColor='rgba(31,41,55,1)' outline='none'>
                         Toggle {colorMode === 'light' ? 'Dark' : 'Light'}
                     </Button>
                 </HStack>
             </Box>
-            <Flex m='10px'>
-                <Box p='4' border='green 1px solid' w='49%'>
+            <Flex m='10px' direction={{ base: 'column', md: 'column', lg: 'row', }}>
+                <Box p='4' border='green 1px solid' flex='1' m='5'>
                     <VStack gap='20px'>
                         <Heading>Encrypt</Heading>
                         <Heading size='sm'>Encrypt some text. The result shown will be a Bcrypt encrypted hash.</Heading>
@@ -114,20 +126,52 @@ const HashForm = () => {
                                 p='5px'
                                 color='white'
                                 mt='4'
+                                mb='1'
                                 bg='teal.500'
                                 rounded='md'
                                 shadow='md'
-
+                                as='h3'
+                                lineHeight='tight'
+                                w={['sm', 'md', 'lg']}
                             >
                                 {!result ? 'Hey there, type something in that field below' : result}
-
                             </Box>
-                            <Button h='1.75rem' size='sm' onClick={onCopy()}>
+                            <Button h='1.75rem' size='sm' onClick={onCopy}>
                                 {hasCopied ? 'Copied' : 'Copy'}
                             </Button>
+                            <Button ml={2} h='1.75rem' size='sm' onClick={onOpen}>
+                                QR
+                            </Button>
+                            {/* /Open/preview QR code generated from hashed input */}
+                            <Modal isOpen={isOpenQR} onClose={onClose}>
+                                <ModalOverlay />
+                                <ModalContent>
+                                    <ModalHeader>QR code from hashed input</ModalHeader>
+                                    <ModalCloseButton />
+                                    <ModalBody align="center">
+                                        {result ?
+                                            <QRCodeCanvas
+                                                id="qrCodeD"
+                                                title="QR code from hashed input"
+                                                value={result}
+                                                level={"H"}
+                                                includeMargin={true}
+                                                size={250} />
+                                            : "Failed to generate QR code"
+                                        }
+
+                                    </ModalBody>
+
+                                    <ModalFooter >
+                                        <Button colorScheme='blue' mr={3} onClick={onDownloadQr}>
+                                            Download
+                                        </Button>
+                                    </ModalFooter>
+                                </ModalContent>
+                            </Modal>
 
                         </Collapse>
-                        <Select variant='flushed' placeholder='Select algorithm' >
+                        {/* <Select variant='flushed' placeholder='Select algorithm' >
                             {alg.map((index, item) => {
                                 return (
                                     <option key={index}>{item}</option>
@@ -135,7 +179,7 @@ const HashForm = () => {
 
 
                             })}
-                        </Select>
+                        </Select> */}
                         {/* <Select placeholder='Select option'>
                             <option value='option1'>{alg[1]}</option>
                             <option value='option2'>Option 2</option>
@@ -153,7 +197,7 @@ const HashForm = () => {
                             </InputGroup>
                         </FormControl>
                         {input['aria-valuenow'] >= 15 &&
-                            <Heading size='sm'>* The higher round number, the longer time would take.</Heading>
+                            <Heading size='sm'>* It might be delay somehow since the round number increasing.</Heading>
                         }
                         <HStack maxW='320px'>
                             <Button {...inc}>+</Button>
@@ -162,8 +206,8 @@ const HashForm = () => {
                         </HStack>
                     </VStack>
                 </Box>
-                <Spacer />
-                <Box p='4' border='green 1px solid' w='49%'>
+
+                <Box p='4' border='green 1px solid' flex='1' m='5'>
                     <VStack gap='20px'>
                         <Heading>Encrypt</Heading>
                         <Heading size='sm'>Encrypt some text. The result shown will be a Bcrypt encrypted hash.</Heading>
@@ -186,12 +230,11 @@ const HashForm = () => {
                                 <Input id='text-input' mb='20px' placeholder='*Text input' value={textInputToCompare} onChange={event => setTextInputToCompare(event.target.value)} />
                                 <Input id='hashed-input' placeholder='*Hashed input' value={hashedInput} onChange={event => setHashedInput(event.target.value)} />
 
-                                {/* {!isValid ? (
+                                {/* {!isError ? (
                                     <FormHelperText>
-                                        Enter the email you'd like to receive the newsletter on.
-                                    </FormHelperText>
+                                        Enter the text and hashed you'd like to compare                                    </FormHelperText>
                                 ) : (
-                                    <FormErrorMessage>Email is required.</FormErrorMessage>
+                                    <FormErrorMessage>All fields is required.</FormErrorMessage>
                                 )} */}
                             </InputGroup>
                         </FormControl>
@@ -210,3 +253,42 @@ const HashForm = () => {
 }
 
 export default HashForm
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
